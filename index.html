@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flappy Bird</title>
+<style>
+body{margin:0;background:#70c5ce;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;overflow:hidden}
+#game{position:relative;width:360px;height:560px;background:#70c5ce;overflow:hidden;border:3px solid black}
+#bird{position:absolute;width:34px;height:24px;background:yellow;border:2px solid black;border-radius:50%;left:80px;top:250px}
+.pipe{position:absolute;width:55px;background:green;border:2px solid black}
+#score{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:bold;color:white;z-index:10}
+#msg{position:absolute;top:45%;width:100%;text-align:center;font-size:22px;font-weight:bold;color:white;z-index:10}
+</style>
+</head>
+<body>
+<div id="game" onclick="jump()">
+<div id="score">0</div>
+<div id="msg">Tap to Start</div>
+<div id="bird"></div>
+</div>
+<script>
+let bird=document.getElementById("bird");
+let game=document.getElementById("game");
+let scoreEl=document.getElementById("score");
+let msg=document.getElementById("msg");
+let y=250, vel=0, gravity=0.45, score=0, started=false, over=false;
+let pipes=[];
+function jump(){ if(over){location.reload();return;} if(!started){started=true;msg.innerText="";setInterval(loop,20);createPipe();} vel=-8; }
+function createPipe(){
+ if(over) return;
+ let gap=150, topH=Math.random()*250+50;
+ let top=document.createElement("div"); top.className="pipe"; top.style.height=topH+"px"; top.style.top="0px"; top.style.left="360px";
+ let bot=document.createElement("div"); bot.className="pipe"; bot.style.height=(560-topH-gap)+"px"; bot.style.bottom="0px"; bot.style.left="360px";
+ game.appendChild(top); game.appendChild(bot);
+ pipes.push({top:top,bot:bot,x:360,passed:false});
+ setTimeout(createPipe,1500);
+}
+function loop(){
+ if(over) return;
+ vel+=gravity; y+=vel; bird.style.top=y+"px";
+ if(y<0) y=0; if(y>536){gameOver();}
+ for(let p of pipes){
+  p.x-=3; p.top.style.left=p.x+"px"; p.bot.style.left=p.x+"px";
+  if(p.x+55<80 && !p.passed){p.passed=true;score++;scoreEl.innerText=score;}
+  if(p.x<114 && p.x+55>80){
+   let topH=parseInt(p.top.style.height);
+   if(y<topH || y+24>topH+150){gameOver();}
+  }
+ }
+}
+function gameOver(){ over=true; msg.innerText="Game Over! Score: "+score+" Tap to Restart"; }
+</script>
+</body>
+</html>
