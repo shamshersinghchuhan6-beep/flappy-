@@ -1,54 +1,451 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flappy Bird</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flappy Flap</title>
 <style>
-body{margin:0;background:#70c5ce;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;overflow:hidden}
-#game{position:relative;width:360px;height:560px;background:#70c5ce;overflow:hidden;border:3px solid black}
-#bird{position:absolute;width:34px;height:24px;background:yellow;border:2px solid black;border-radius:50%;left:80px;top:250px}
-.pipe{position:absolute;width:55px;background:green;border:2px solid black}
-#score{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:bold;color:white;z-index:10}
-#msg{position:absolute;top:45%;width:100%;text-align:center;font-size:22px;font-weight:bold;color:white;z-index:10}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#111;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden}
+#box{position:relative;width:100%;max-width:420px;height:100dvh;max-height:800px;background:#70c5ce;overflow:hidden}
+canvas{width:100%;height:100%;display:block}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes shine{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}
+@keyframes moneyPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+#hud{position:absolute;top:12px;left:10px;right:10px;display:flex;justify-content:space-between;z-index:6;pointer-events:none}
+.hudPill{background:rgba(0,0,0,.55);color:#fff;padding:8px 12px;border-radius:20px;font-weight:900;font-size:14px}
+#scoreBig{position:absolute;top:60px;left:0;right:0;text-align:center;font-size:54px;font-weight:900;color:white;text-shadow:4px 4px 0 #000;z-index:5;pointer-events:none}
+#menu{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;background:linear-gradient(180deg,#70c5ce 0%,#4aa8b8 45%,#1a1a2e 100%);z-index:10;padding:16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#menu h1{font-size:42px;color:#FFD700;text-shadow:4px 4px 0 #000;line-height:1;animation:floaty 2s infinite;margin:4px 0}
+#menu p{color:white;margin:10px 0;font-size:15px;font-weight:bold;background:rgba(0,0,0,.4);padding:8px 12px;border-radius:12px}
+.btn{padding:14px 20px;font-size:18px;font-weight:900;background:#FFA500;color:white;border:none;border-radius:16px;box-shadow:0 6px 0 #b87300;cursor:pointer;margin:5px;width:260px;max-width:100%}
+.btn:active{transform:scale(.96)}
+.btn2{background:#2ecc71;box-shadow:0 6px 0 #1a7a43}
+.btn3{background:#9b59b6;box-shadow:0 6px 0 #6c3483}
+.btnGold{background:#FFD700;color:#000;box-shadow:0 6px 0 #b89600}
+.btnBlue{background:#3498db;box-shadow:0 6px 0 #1a5276}
+.btnDark{background:#111;box-shadow:0 6px 0 #000}
+.btnMoney{background:#00C853;box-shadow:0 6px 0 #007E33;animation:moneyPulse 1.5s infinite}
+#topRow{width:100%;max-width:320px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+#soundBtn{background:rgba(0,0,0,.5);color:#fff;border:none;padding:8px 12px;border-radius:20px;font-weight:900;font-size:14px}
+#statsRow{width:100%;max-width:320px;display:flex;gap:8px;margin:6px 0}
+.statCard{flex:1;background:rgba(255,255,255,.95);border-radius:14px;padding:10px 6px;text-align:center}
+.statCard b{font-size:18px;display:block;color:#111}
+.statCard span{font-size:11px;color:#666;font-weight:900}
+#skinCard{background:rgba(255,255,255,.95);width:100%;max-width:320px;border-radius:16px;padding:10px;display:flex;align-items:center;gap:10px;text-align:left;margin:6px 0}
+#skinCard .bigEmoji{font-size:44px}
+#mapRow{width:100%;max-width:320px;background:rgba(255,255,255,.95);border-radius:14px;padding:10px;margin:6px 0;text-align:left}
+#mapScroll{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:8px 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#mapScroll::-webkit-scrollbar{display:none}
+.mapChip{flex-shrink:0;padding:10px 14px;border-radius:20px;background:#eee;border:2px solid #ddd;font-weight:900;font-size:12px;white-space:nowrap;cursor:pointer}
+.mapChip.sel{background:#FFD700;border-color:#FFA500}
+.mapChip.locked{background:#ccc;color:#777}
+#shop,#leaderBoardScreen,#redeemBoardScreen{display:none;flex-direction:column;position:absolute;inset:0;background:#1a1a2e;z-index:11}
+#shopTop{padding:10px;text-align:center}
+#shopTop h2{color:#FFD700;font-size:26px}
+#shopScroll{flex:1;overflow-y:auto;padding:0 14px 10px;-webkit-overflow-scrolling:touch}
+#coinInfo{color:#fff;font-weight:900;background:#FFA500;padding:8px 16px;border-radius:20px;display:inline-block}
+.sectionTitle{color:#fff;font-size:17px;font-weight:900;margin:14px 0 6px;text-align:left}
+.sectionTitle.premium{color:#FFD700;animation:shine 1.5s infinite}
+#grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.card{background:#fff;border-radius:16px;padding:12px;text-align:center}
+.card.sel{outline:4px solid #FFD700}
+.card.premiumCard{background:linear-gradient(180deg,#fff7cc,#ffe27a);outline:3px solid #FFD700;animation:shine 1.5s infinite}
+.card .birdIcon{font-size:38px}
+.card b{font-size:13px;display:block;margin:4px 0}
+.card span{font-size:11px;color:#555;display:block;min-height:28px}
+.card button{margin-top:6px;padding:8px;width:100%;border:none;border-radius:10px;font-weight:900;background:#111;color:#fff}
+.card button.buy{background:#FFA500}
+.card button.owned{background:#2ecc71}
+.card button.selectedBtn{background:#FFD700;color:#000}
+.card button.premiumBtn{background:#e91e63;color:#fff}
+#tapHint{position:absolute;bottom:140px;left:0;right:0;text-align:center;color:white;font-weight:900;font-size:19px;text-shadow:2px 2px 0 #000;display:none;z-index:5;animation:bounce 1s infinite;pointer-events:none}
+#powerTag{position:absolute;top:125px;left:0;right:0;text-align:center;color:#FFD700;background:rgba(0,0,0,.5);padding:4px;font-weight:900;font-size:13px;z-index:5;pointer-events:none}
+#shieldTag{position:absolute;top:150px;left:0;right:0;text-align:center;color:#fff;background:#2ecc71;padding:8px;font-weight:900;font-size:14px;display:none;z-index:6;pointer-events:none;animation:blink .5s infinite}
+#coinPop{position:absolute;top:190px;left:0;right:0;text-align:center;color:#FFD700;font-weight:900;font-size:22px;text-shadow:2px 2px 0 #000;display:none;z-index:6;pointer-events:none}
+#timerTag{position:absolute;top:155px;left:0;right:0;text-align:center;color:#fff;background:#e74c3c;padding:6px;font-weight:900;font-size:16px;display:none;z-index:6;pointer-events:none}
+#pauseBtn{position:absolute;top:110px;right:10px;z-index:7;background:rgba(0,0,0,.5);color:#fff;border:none;padding:8px 12px;border-radius:12px;font-weight:900}
+#homeBird{font-size:56px;animation:floaty 2s infinite}
+#payPopup,#namePopup,#contactPopup{display:none;position:absolute;inset:0;background:rgba(0,0,0,.88);z-index:30;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;overflow-y:auto}
+#payBox{background:#fff;border-radius:20px;padding:20px;width:100%;max-width:330px}
+#payBox h3{font-size:22px;margin-bottom:6px}
+#payBox p{font-size:13px;color:#555;margin:4px 0}
+#redeemInput,#devCodeInput,#playerNameInput,#tournCodeInput{width:100%;padding:12px;border:2px solid #ddd;border-radius:12px;font-size:16px;text-align:center;margin:8px 0;font-weight:900;text-transform:uppercase}
+#devLockPopup{display:none;position:absolute;inset:0;background:rgba(0,0,0,.92);z-index:40;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center}
+#devShop{display:none;flex-direction:column;position:absolute;inset:0;background:#0f0f1e;z-index:41}
+#devShopScroll{flex:1;overflow-y:auto;padding:0 14px 10px;-webkit-overflow-scrolling:touch}
+.devPack{background:#fff;border-radius:14px;padding:12px;margin:8px 0;text-align:left;cursor:pointer}
+.devCodeRow{background:#fff;border-radius:10px;padding:10px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.devCodeRow.used{background:#333;color:#999}
+.devCodeRow.used b{color:#999;text-decoration:line-through}
+.codeBtn{padding:6px 10px;border:none;border-radius:8px;font-weight:900;font-size:12px;background:#2ecc71;color:#fff}
+.codeBtn.usedBtn{background:#666}
+.leadRow{background:#fff;border-radius:12px;padding:10px;margin:6px 14px;display:flex;justify-content:space-between;align-items:center}
+.leadRow.top1{background:linear-gradient(180deg,#FFD700,#FFE27A);outline:2px solid #FFA500}
+#devFloat{position:absolute;bottom:12px;right:12px;z-index:20;background:rgba(0,0,0,.6);color:#aaa;border:1px solid rgba(255,255,255,.3);padding:8px 12px;border-radius:20px;font-size:11px;font-weight:900}
+#leaderList,#tournList{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 </style>
 </head>
 <body>
-<div id="game" onclick="jump()">
-<div id="score">0</div>
-<div id="msg">Tap to Start</div>
-<div id="bird"></div>
+<div id="box">
+<div id="hud"><div class="hudPill" id="coinHud">🪙 0</div><div class="hudPill" id="bestHud">🏆 BEST: 0</div></div>
+<div id="scoreBig">0</div><div id="powerTag"></div><div id="shieldTag">🛡️ SHIELD NE BACHA LIYA!</div><div id="timerTag">⏱️ 15s</div><div id="coinPop"></div>
+<button id="pauseBtn" style="display:none">⏸ PAUSE</button>
+<canvas id="game" width="420" height="800"></canvas>
+<div id="tapHint">👆 TAP TO FLY 👆</div>
+<div id="menu">
+<div id="topRow"><div style="color:#fff;font-weight:900;font-size:13px">Made by Sagar Chauhan</div><button id="soundBtn">🔊 SOUND ON</button></div>
+<div id="homeBird">🐤</div><h1>FLAPPY<br>FLAP</h1>
+<div id="statsRow"><div class="statCard"><b id="statBest">0</b><span>🏆 BEST</span></div><div class="statCard"><b id="statCoins">0</b><span>🪙 COINS</span></div><div class="statCard"><b id="statSkins">1/25</b><span>🐤 SKINS</span></div></div>
+<div id="skinCard"><div class="bigEmoji" id="skinEmoji">🐤</div><div><b id="skinName">Classic</b><span id="skinPower">Normal • No Power</span><span style="color:#2ecc71;font-weight:900;font-size:12px">Tap SHOP to change skin</span></div></div>
+<div id="mapRow"><b id="currentMapLabel">🗺️ MAP: Normal World</b><span id="mapProgress" style="font-size:12px;color:#666;display:block"></span><div id="mapScroll"></div><p style="background:none;color:#888;font-size:11px;margin:2px 0;padding:0">👈 Map ko slide karke dekho</p></div>
+<p id="menuMsg">Tap to fly, Collect Coins, Buy Skins!</p>
+<button class="btn" id="dailyBtn">🎁 DAILY REWARD +10 🪙</button>
+<button class="btn" id="playBtn">▶ PLAY</button>
+<button class="btn btnBlue" id="challengeBtn">⏱️ CHALLENGE - 15 SEC + ⏱️ GHADI</button>
+<button class="btn btn2" id="shopBtn">🛒 SHOP - 25 SKINS</button>
+<button class="btn btnGold" id="leaderBtn">🏆 LEADERBOARD</button>
+<button class="btn btn2" id="redeemBoardBtn">🎟️ REDEEM BOARD - TOURNAMENT JOIN</button>
+<button class="btn btnDark" id="contactBtn">📞 CONTACT US</button>
+<button class="btn btn3" id="resumeBtn" style="display:none">⏯ RESUME GAME</button>
+<div style="color:#eee;font-size:12px;margin-top:6px">Coins Are Saved • Tournament Codes Only • @vorhex_gaming</div><div style="height:20px"></div>
+</div>
+<button id="devFloat">🔒 DEVELOPER</button>
+<div id="shop"><div id="shopTop"><h2>🛒 BIRD SHOP</h2><div id="coinInfo">🪙 Coins: 0</div></div><div id="shopScroll"><div class="sectionTitle">🪙 COIN SKINS</div><div id="grid"></div><div class="sectionTitle premium">👑 PREMIUM - COINS / REDEEM SE</div><div id="gridPremium"></div></div><button class="btn" id="closeShop" style="width:calc(100% - 28px);margin:10px 14px;background:#e74c3c;box-shadow:0 6px 0 #922B21">⬅ BACK TO HOME</button></div>
+<div id="leaderBoardScreen"><div style="padding:12px;text-align:center"><h2 style="color:#FFD700">🏆 LEADERBOARD</h2><p id="onlineStatus" style="color:#00FF88;font-size:12px;font-weight:900">⚪ OFFLINE - Apna Score</p><p style="color:#FFD700;font-weight:900;font-size:13px" id="myNameLabel"></p></div><div id="leaderList"></div><button class="btn" id="closeLeader" style="width:calc(100% - 28px);margin:10px 14px;background:#e74c3c;box-shadow:0 6px 0 #922B21">⬅ BACK</button></div>
+<div id="redeemBoardScreen"><div style="padding:12px;text-align:center"><h2 style="color:#FFD700">🎟️ REDEEM BOARD</h2><p style="color:#fff;font-size:12px">Tournament Join karne ke liye Code daalo</p><p id="tournStatus" style="color:#00FF88;font-weight:900"></p></div><div style="padding:0 14px"><input id="tournCodeInput" placeholder="TOURN-001 DALO"><button class="btn btn2" id="tournJoinBtn" style="width:100%">✅ JOIN TOURNAMENT</button><p style="color:#aaa;font-size:12px;text-align:center">Code nahi hai? CONTACT US dabao.</p></div><div id="tournList" style="padding:0 0 10px"></div><button class="btn" id="closeRedeemBoard" style="width:calc(100% - 28px);margin:10px 14px;background:#e74c3c;box-shadow:0 6px 0 #922B21">⬅ BACK</button></div>
+<div id="pauseMenu" style="display:none;position:absolute;inset:0;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:rgba(0,0,0,.65);z-index:10;padding:18px"><h1 style="color:#fff;font-size:34px">⏸ PAUSED</h1><button class="btn btn2" id="resumeBtn2">▶ RESUME</button><button class="btn" id="homeBtn">🏠 HOME</button></div>
+<div id="namePopup"><div style="background:#fff;border-radius:20px;padding:20px;width:100%;max-width:330px"><div style="font-size:40px">👋</div><h3>Apna Naam Daalo</h3><p style="font-size:13px;color:#555">Ye naam Leaderboard me dikhega.</p><input id="playerNameInput" placeholder="APNA NAAM LIKHO" maxlength="12"><button class="btn btn2" id="saveNameBtn" style="width:100%">✅ SAVE & PLAY</button></div></div>
+<div id="contactPopup"><div style="background:#fff;border-radius:20px;padding:20px;width:100%;max-width:330px"><div style="font-size:40px">📞</div><h3>Contact Us</h3><p style="font-size:13px;color:#555">Tournament Code ke liye contact karo.<br>Apna Naam + TOURN Code likh ke bhejo.</p><div style="background:#FFF9C4;padding:12px;border-radius:12px;text-align:center"><div style="font-size:13px;color:#333;font-weight:900">📸 Instagram ID</div><div style="font-size:20px;font-weight:900;color:#E1306C;margin:4px 0">@vorhex_gaming</div><a href="https://www.instagram.com/vorhex_gaming?dmpr=amd1bjIwbjdocmc1ye" target="_blank" style="display:block;background:#E1306C;color:#fff;padding:10px;border-radius:10px;font-weight:900;text-decoration:none;margin-top:6px">📩 Instagram Pe Message Karo</a><p style="font-size:11px;color:#666;margin:6px 0 0">Insta pe jaake FOLLOW + MSG karo - "TOURN Code Chahiye"</p></div><button class="btn" id="closeContact" style="width:100%;background:#999;box-shadow:0 6px 0 #666;margin-top:10px">❌ CLOSE</button></div></div>
+<div id="payPopup"><div id="payBox"><div id="payStepRedeem"><h3 id="payName">Premium Skin</h3><p>2 tarike se unlock karo</p><button class="btn btn2" id="buyCoinsBtn" style="width:100%">🪙 COINS SE BUY - 500 Coins</button><h3 style="margin-top:12px">🎟️ Redeem Code Daalo</h3><input id="redeemInput" placeholder="CODE DALO"><p id="redeemError" style="color:red;font-weight:900;display:none"></p><button class="btn btn2" id="redeemVerifyBtn" style="width:100%">🔓 REDEEM & UNLOCK</button><button class="btn" id="payCancelBtn" style="width:100%;background:#999;box-shadow:0 6px 0 #666">⬅ BACK</button></div></div></div>
+<div id="devLockPopup"><div style="background:#fff;border-radius:20px;padding:20px;width:100%;max-width:320px"><div style="font-size:40px">🔒</div><h3>Developer Only</h3><input id="devCodeInput" placeholder="DEVELOPER CODE"><p id="devCodeError" style="color:red;font-weight:900;display:none">Galat Code!</p><button class="btn btn2" id="devUnlockBtn" style="width:100%">🔓 UNLOCK</button><button class="btn" id="devLockCancel" style="width:100%;background:#999;box-shadow:0 6px 0 #666">❌ CANCEL</button></div></div>
+<div id="devShop"><div style="padding:12px;text-align:center"><h2 style="color:#FFD700;font-size:24px">🔒 DEVELOPER SHOP</h2><p id="devStats" style="color:#FFD700;font-weight:900;font-size:13px"></p></div><div id="devShopScroll"><div id="devPackList"></div><div id="devCodeList" style="display:none"><button class="btn" id="devBackToPacks" style="width:100%;background:#9b59b6;box-shadow:0 6px 0 #6c3483;margin:0 0 10px 0">⬅ BACK TO PACKAGES</button><h3 id="devPackTitle" style="color:#fff;text-align:center;margin:8px 0"></h3><div id="devCodesContainer"></div></div></div><button class="btn" id="devShopBack" style="width:calc(100% - 28px);margin:10px 14px;background:#e74c3c;box-shadow:0 6px 0 #922B21">⬅ BACK TO HOME</button></div>
 </div>
 <script>
-let bird=document.getElementById("bird");
-let game=document.getElementById("game");
-let scoreEl=document.getElementById("score");
-let msg=document.getElementById("msg");
-let y=250, vel=0, gravity=0.45, score=0, started=false, over=false;
-let pipes=[];
-function jump(){ if(over){location.reload();return;} if(!started){started=true;msg.innerText="";setInterval(loop,20);createPipe();} vel=-8; }
-function createPipe(){
- if(over) return;
- let gap=150, topH=Math.random()*250+50;
- let top=document.createElement("div"); top.className="pipe"; top.style.height=topH+"px"; top.style.top="0px"; top.style.left="360px";
- let bot=document.createElement("div"); bot.className="pipe"; bot.style.height=(560-topH-gap)+"px"; bot.style.bottom="0px"; bot.style.left="360px";
- game.appendChild(top); game.appendChild(bot);
- pipes.push({top:top,bot:bot,x:360,passed:false});
- setTimeout(createPipe,1500);
+const c=document.getElementById('game'), ctx=c.getContext('2d');
+let W=420,H=800,groundH=90;
+const DEV_CODE="SAGAR-DEV-786";
+function fmtDate(d){ try{ return new Date(d).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){ return new Date().toLocaleDateString(); } }
+const MAPS=[
+{id:"normal",name:"Normal World",emoji:"🌍",bg:"#70c5ce",pipe:"#2ecc71",pipeDark:"#27ae60",ground:"#DEB887",need:0,needFrom:"",needScore:0,speed:3.2,grav:0},
+{id:"desert",name:"Desert",emoji:"🌵",bg:"#FFD97A",pipe:"#C68642",pipeDark:"#8B5A2B",ground:"#F4A460",need:5,needFrom:"normal",needScore:5,speed:3.4,grav:0},
+{id:"night",name:"Night City",emoji:"🌃",bg:"#1A1A2E",pipe:"#9B59B6",pipeDark:"#6C3483",ground:"#2C3E50",need:15,needFrom:"desert",needScore:15,speed:3.5,grav:0},
+{id:"ocean",name:"Ocean",emoji:"🌊",bg:"#2E86C1",pipe:"#1ABC9C",pipeDark:"#148F77",ground:"#F5CBA7",need:20,needFrom:"night",needScore:20,speed:3.3,grav:-0.05},
+{id:"space",name:"Space",emoji:"🌌",bg:"#0B0B2A",pipe:"#7B2FFF",pipeDark:"#4A00E0",ground:"#1A1A2E",need:30,needFrom:"ocean",needScore:30,speed:3.1,grav:-0.1},
+{id:"snow",name:"Snow",emoji:"❄️",bg:"#D6EAF8",pipe:"#AED6F1",pipeDark:"#85C1E9",ground:"#FFFFFF",need:35,needFrom:"space",needScore:35,speed:3.4,grav:0},
+{id:"lava",name:"Lava",emoji:"🌋",bg:"#2C0A00",pipe:"#FF4500",pipeDark:"#C0392B",ground:"#7B241C",need:50,needFrom:"snow",needScore:50,speed:3.9,grav:0.05}
+];
+const DEV_PACKS=[
+{skinId:100,name:"Inferno God",emoji:"🔥",prefix:"INFERNO",count:500},
+{skinId:101,name:"Cosmic King",emoji:"👑",prefix:"COSMIC",count:500},
+{skinId:102,name:"Phoenix Legend",emoji:"🐦‍🔥",prefix:"PHOENIX",count:500},
+{skinId:103,name:"Void Master",emoji:"🌌",prefix:"VOID",count:500},
+{skinId:104,name:"Zeus God",emoji:"⚡",prefix:"ZEUS",count:500},
+{skinId:999,name:"Tournament Package",emoji:"🏆",prefix:"TOURN",count:1000,isTourn:true}
+];
+function makeCode(prefix,num){ return prefix+"-"+String(num).padStart(3,'0'); }
+function getUsedCodes(){ try{return JSON.parse(localStorage.getItem('devUsedCodes')||'[]');}catch(e){return [];} }
+function saveUsedCodes(a){ try{localStorage.setItem('devUsedCodes',JSON.stringify(a));}catch(e){} }
+function markCodeUsed(code){ let u=getUsedCodes(); if(!u.includes(code)){ u.push(code); saveUsedCodes(u);} }
+function isCodeUsed(code){ return getUsedCodes().includes(code); }
+function findPackByCode(code){ code=code.toUpperCase().trim(); for(let p of DEV_PACKS){ for(let i=1;i<=p.count;i++){ if(makeCode(p.prefix,i)===code) return p; } } return null; }
+const SKINS=[
+{id:0,name:"Classic",emoji:"🐤",body:"#FFD700",wing:"#FF8C00",price:0,desc:"FREE • Normal",grav:0.55,jump:-9.5,coin:1,shield:0,shieldCount:0,magnet:0,speed:3.2},
+{id:1,name:"Fire Bird",emoji:"🔥",body:"#FF4500",wing:"#FFD700",price:30,desc:"Fire Trail",grav:0.55,jump:-9.8,coin:1,shield:0,shieldCount:0,magnet:0,speed:3.4},
+{id:2,name:"Ice Bird",emoji:"🧊",body:"#00E5FF",wing:"#fff",price:30,desc:"Slow Pipes",grav:0.5,jump:-9.2,coin:1,shield:0,shieldCount:0,magnet:0,speed:2.7},
+{id:3,name:"Gold King",emoji:"👑",body:"#FFD700",wing:"#FFA500",price:60,desc:"2X Coins",grav:0.55,jump:-9.5,coin:2,shield:0,shieldCount:0,magnet:0,speed:3.2},
+{id:4,name:"Ninja",emoji:"🥷",body:"#222",wing:"#555",price:50,desc:"Fast + Light",grav:0.48,jump:-10,coin:1,shield:0,shieldCount:0,magnet:0,speed:3.6},
+{id:5,name:"Shield Hero",emoji:"🛡️",body:"#2ecc71",wing:"#145A32",price:80,desc:"Survive 1 Hit",grav:0.55,jump:-9.5,coin:1,shield:1,shieldCount:1,magnet:0,speed:3.2},
+{id:6,name:"Magnet Pro",emoji:"🧲",body:"#FF69B4",wing:"#C71585",price:80,desc:"Coins Come To You",grav:0.55,jump:-9.5,coin:1,shield:0,shieldCount:0,magnet:1,speed:3.2},
+{id:7,name:"Ghost",emoji:"👻",body:"#eee",wing:"#bbb",price:70,desc:"Light",grav:0.42,jump:-9,coin:1,shield:0,shieldCount:0,magnet:0,speed:3.1,ghost:1},
+{id:8,name:"Dragon",emoji:"🐉",body:"#8E44AD",wing:"#FF4500",price:120,desc:"Shield + 2X",grav:0.55,jump:-9.5,coin:2,shield:1,shieldCount:1,magnet:0,speed:3.2},
+{id:9,name:"Rocket",emoji:"🚀",body:"#FF0000",wing:"#fff",price:100,desc:"Super Jump",grav:0.55,jump:-11,coin:1,shield:0,shieldCount:0,magnet:0,speed:3.5},
+{id:10,name:"Ocean",emoji:"🐳",body:"#3498DB",wing:"#1A5276",price:40,desc:"Slow + Stable",grav:0.5,jump:-9,coin:1,shield:0,shieldCount:0,magnet:0,speed:2.9},
+{id:11,name:"Neon",emoji:"⚡",body:"#00FF00",wing:"#00FFFF",price:90,desc:"Neon 2X",grav:0.55,jump:-9.5,coin:2,shield:0,shieldCount:0,magnet:0,speed:3.3},
+{id:12,name:"Panda",emoji:"🐼",body:"#fff",wing:"#222",price:50,desc:"Cute Easy",grav:0.48,jump:-9.2,coin:1,shield:0,shieldCount:0,magnet:0,speed:3.0},
+{id:13,name:"Tiger",emoji:"🐯",body:"#FF8C00",wing:"#222",price:60,desc:"Fast",grav:0.55,jump:-9.8,coin:1,shield:0,shieldCount:0,magnet:0,speed:3.6},
+{id:14,name:"Angel",emoji:"😇",body:"#FFFACD",wing:"#fff",price:110,desc:"Shield + Magnet",grav:0.5,jump:-9.5,coin:1,shield:1,shieldCount:1,magnet:1,speed:3.1},
+{id:15,name:"Devil",emoji:"😈",body:"#C0392B",wing:"#000",price:110,desc:"2X + Fast",grav:0.55,jump:-10,coin:2,shield:0,shieldCount:0,magnet:0,speed:3.6},
+{id:16,name:"Rainbow",emoji:"🌈",body:"#FF00FF",wing:"#00FF00",price:140,desc:"Best Trail",grav:0.52,jump:-9.6,coin:2,shield:0,shieldCount:0,magnet:1,speed:3.2},
+{id:17,name:"Money King",emoji:"💸",body:"#00FF7F",wing:"#FFD700",price:160,desc:"3X COINS!",grav:0.55,jump:-9.5,coin:3,shield:0,shieldCount:0,magnet:0,speed:3.2},
+{id:18,name:"Ultra Pro",emoji:"💎",body:"#00FFFF",wing:"#fff",price:200,desc:"Shield+Magnet+2X",grav:0.5,jump:-9.8,coin:2,shield:1,shieldCount:1,magnet:1,speed:3.2},
+{id:19,name:"Legend",emoji:"🏆",body:"#FFD700",wing:"#FF0000",price:300,desc:"LEGEND",grav:0.48,jump:-10.2,coin:3,shield:1,shieldCount:1,magnet:1,speed:3.1}
+];
+const PREMIUM=[
+{id:100,name:"Inferno God",emoji:"🔥",body:"#FF2200",wing:"#FFD700",price:1,desc:"EPIC • 5X + SHIELD",grav:0.5,jump:-10,coin:5,shield:1,shieldCount:1,magnet:0,speed:3.2},
+{id:101,name:"Cosmic King",emoji:"👑",body:"#7B2FFF",wing:"#00FFFF",price:1,desc:"EPIC • 5X + SHIELD + MAGNET",grav:0.48,jump:-10,coin:5,shield:1,shieldCount:1,magnet:1,speed:3.1},
+{id:102,name:"Phoenix Legend",emoji:"🐦‍🔥",body:"#FF6B00",wing:"#FF0000",price:1,desc:"LEGEND • 2X SHIELD",grav:0.5,jump:-10.5,coin:3,shield:1,shieldCount:2,magnet:0,speed:3.2},
+{id:103,name:"Void Master",emoji:"🌌",body:"#111",wing:"#7B2FFF",price:1,desc:"EPIC • SUPER SLOW + MAGNET + 3X",grav:0.4,jump:-9.5,coin:3,shield:0,shieldCount:0,magnet:1,speed:2.0},
+{id:104,name:"Zeus God",emoji:"⚡",body:"#FFD700",wing:"#fff",price:1,desc:"GOD • 5X + SHIELD + MAGNET + JUMP",grav:0.45,jump:-11.5,coin:5,shield:1,shieldCount:2,magnet:1,speed:3.0}
+];
+const ALL_SKINS=[...SKINS,...PREMIUM];
+let coins=parseInt(localStorage.getItem('flappyCoins')||'0');
+let best=parseInt(localStorage.getItem('flappyBest')||'0');
+let owned=JSON.parse(localStorage.getItem('flappyOwned')||'[0]');
+let selected=parseInt(localStorage.getItem('flappySelected')||'0');
+let soundOn=localStorage.getItem('flappySound')!=='off';
+let lastDaily=localStorage.getItem('flappyDaily')||'';
+let playerName=localStorage.getItem('flappyPlayerName')||'';
+let currentMapId=localStorage.getItem('flappyCurrentMap')||'normal';
+let mapBest=JSON.parse(localStorage.getItem('flappyMapBest')||'{}');
+let leaderboard=JSON.parse(localStorage.getItem('flappyLeaderboard')||'[]');
+let onlineScores=[];
+let pendingPremium=null, isChallenge=false, challengeTimeLeft=15, challengeTimer=null;
+let bird={x:90,y:300,r:18,vy:0};
+let pipes=[], coinsArr=[], timerArr=[];
+let score=0, gameStarted=false, gameOver=false, paused=false, frame=0, shieldUsedCount=0, dead=false, invincibleUntil=0;
+let currentDevPack=null;
+function curMap(){ return MAPS.find(m=>m.id===currentMapId)||MAPS[0]; }
+function curSkin(){ return ALL_SKINS.find(s=>s.id===selected) || SKINS[0]; }
+function saveAll(){ try{localStorage.setItem('flappyCoins',coins);localStorage.setItem('flappyBest',best);localStorage.setItem('flappyOwned',JSON.stringify(owned));localStorage.setItem('flappySelected',selected);localStorage.setItem('flappySound',soundOn?'on':'off');localStorage.setItem('flappyCurrentMap',currentMapId);localStorage.setItem('flappyMapBest',JSON.stringify(mapBest));localStorage.setItem('flappyLeaderboard',JSON.stringify(leaderboard));}catch(e){} }
+function isMapUnlocked(map){ if(map.id==='normal') return true; let prevBest=mapBest[map.needFrom]||0; return prevBest>=map.needScore; }
+function getNextLockedMap(){ for(let m of MAPS){ if(!isMapUnlocked(m)) return m; } return null; }
+function addToLeaderboard(name, sc, mapId, mode){ if(!name) name='PLAYER'; leaderboard.push({name:name,score:sc,map:mapId,mode:mode||'Normal',date:Date.now(),dateStr:fmtDate(Date.now())}); leaderboard.sort((a,b)=>b.score-a.score); leaderboard=leaderboard.slice(0,20); saveAll(); }
+function getPowerText(s){ let p=[]; if(s.coin>1) p.push(s.coin+'X Coins'); if(s.shield) p.push('🛡 Shield'+(s.shieldCount>1?' x'+s.shieldCount:'')); if(s.magnet) p.push('🧲 Magnet'); if(s.ghost) p.push('👻 Ghost'); if(p.length) return p.join(' • '); return 'Normal • No Power'; }
+function updateHUD(){
+  document.getElementById('coinHud').textContent='🪙 '+coins;
+  document.getElementById('bestHud').textContent='🏆 BEST: '+best;
+  document.getElementById('scoreBig').textContent=score;
+  document.getElementById('coinInfo').textContent='🪙 Coins: '+coins;
+  let s=curSkin(); let p=[];
+  if(s.coin>1) p.push(s.coin+'X Coins'); if(s.shield) p.push('Shield '+(shieldUsedCount>=s.shieldCount?'(USED)':'(READY x'+(s.shieldCount-shieldUsedCount)+')')); if(s.magnet) p.push('Magnet'); if(s.ghost) p.push('Ghost');
+  document.getElementById('powerTag').textContent=p.length?'POWER: '+p.join(' • ')+' | '+s.name+' | '+curMap().emoji+' '+curMap().name:'USING: '+s.name+' | '+curMap().name;
+  document.getElementById('homeBird').textContent=s.emoji;
+  document.getElementById('skinEmoji').textContent=s.emoji;
+  document.getElementById('skinName').textContent=s.name+(s.id>=100?' 👑 PREMIUM':'');
+  document.getElementById('skinPower').textContent=getPowerText(s);
+  document.getElementById('statBest').textContent=best;
+  document.getElementById('statCoins').textContent=coins;
+  document.getElementById('statSkins').textContent=owned.length+'/25';
+  document.getElementById('soundBtn').textContent=soundOn?'🔊 SOUND ON':'🔇 SOUND OFF';
+  let today=new Date().toDateString(); let btn=document.getElementById('dailyBtn');
+  if(lastDaily===today){ btn.disabled=true; btn.textContent='✅ DAILY TAKEN - KAL PHIR AANA'; } else { btn.disabled=false; btn.textContent='🎁 DAILY REWARD +10 🪙'; }
+  document.getElementById('currentMapLabel').textContent=curMap().emoji+' MAP: '+curMap().name+' • Best: '+(mapBest[currentMapId]||0);
+  let next=getNextLockedMap();
+  if(next){ let fromMap=MAPS.find(m=>m.id===next.needFrom); document.getElementById('mapProgress').textContent='Next: '+next.emoji+' '+next.name+' - '+fromMap.name+' me '+next.needScore+' Score banao ('+(mapBest[next.needFrom]||0)+'/'+next.needScore+')'; }
+  else document.getElementById('mapProgress').textContent='🎉 Saare Maps Khul Gaye! Tu LEGEND hai!';
+  document.getElementById('myNameLabel').textContent=playerName?('Tum: '+playerName):'';
+  document.getElementById('onlineStatus').textContent = onlineScores.length>0 ? '🟢 ONLINE - Sabka Leaderboard ('+onlineScores.length+')' : '⚪ OFFLINE - Apna Score';
+  renderMapChips();
+  let isMenu=document.getElementById('menu').style.display!=='none';
+  document.getElementById('devFloat').style.display=isMenu?'block':'none';
+}
+function renderMapChips(){
+  let cont=document.getElementById('mapScroll'); if(!cont) return; cont.innerHTML='';
+  MAPS.forEach(m=>{
+    let unlocked=isMapUnlocked(m);
+    let chip=document.createElement('button'); chip.className='mapChip'+(m.id===currentMapId?' sel':'')+(!unlocked?' locked':'');
+    chip.textContent=unlocked?m.emoji+' '+m.name:m.emoji+' 🔒 '+m.name+' ('+m.needScore+')';
+    chip.onclick=(e)=>{ e.stopPropagation(); if(!unlocked){ alert(m.emoji+' '+m.name+' LOCKED hai!\n'+MAPS.find(x=>x.id===m.needFrom).name+' me '+m.needScore+' Score banao.\nTera score: '+(mapBest[m.needFrom]||0)); return; } currentMapId=m.id; saveAll(); updateHUD(); };
+    cont.appendChild(chip);
+  });
+}
+function renderLeaderboard(){
+  let list=document.getElementById('leaderList'); list.innerHTML='';
+  let data = onlineScores.length>0 ? onlineScores : leaderboard;
+  if(data.length===0){ list.innerHTML='<p style="color:#fff;text-align:center;padding:20px">Abhi koi score nahi hai.<br>Pehla score banao!</p>'; return; }
+  data.forEach((e,i)=>{
+    let div=document.createElement('div'); div.className='leadRow'+(i===0?' top1':'');
+    div.innerHTML=`<div><b>${i===0?'👑 ':''}#${i+1} ${e.name}</b><br><span style="font-size:11px;color:#666">${e.mode||'Normal'} • ${e.map} • ${e.dateStr||fmtDate(e.date||Date.now())}</span></div><b style="font-size:20px">${e.score}</b>`;
+    list.appendChild(div);
+  });
+}
+function updateTournStatus(){
+  let joined=localStorage.getItem('tournJoined')||'';
+  document.getElementById('tournStatus').textContent = joined ? '✅ Joined: '+joined : '❌ Abhi Join nahi hue';
+  let t=document.getElementById('tournList'); t.innerHTML='';
+  if(joined){ t.innerHTML=`<div class="leadRow top1"><div><b>🏆 ${playerName||'YOU'}</b><br><span style="font-size:11px;color:#666">Tournament Joined • ${joined}</span></div><b>JOINED</b></div>`; }
+}
+function showCoinPop(t){ let el=document.getElementById('coinPop'); el.textContent=t; el.style.display='block'; setTimeout(()=>el.style.display='none',800); }
+function showHome(msg){
+  gameStarted=false; gameOver=true; paused=false; isChallenge=false;
+  if(challengeTimer) clearInterval(challengeTimer);
+  document.getElementById('menu').style.display='flex';
+  document.getElementById('shop').style.display='none';
+  document.getElementById('leaderBoardScreen').style.display='none';
+  document.getElementById('redeemBoardScreen').style.display='none';
+  document.getElementById('pauseMenu').style.display='none';
+  document.getElementById('payPopup').style.display='none';
+  document.getElementById('devLockPopup').style.display='none';
+  document.getElementById('devShop').style.display='none';
+  document.getElementById('namePopup').style.display='none';
+  document.getElementById('contactPopup').style.display='none';
+  document.getElementById('pauseBtn').style.display='none';
+  document.getElementById('tapHint').style.display='none';
+  document.getElementById('shieldTag').style.display='none';
+  document.getElementById('powerTag').style.display='none';
+  document.getElementById('scoreBig').style.display='none';
+  document.getElementById('timerTag').style.display='none';
+  document.getElementById('menuMsg').textContent=msg || 'Tap to fly, Collect Coins, Buy Skins!';
+  updateHUD();
+}
+function renderShop(){
+  const grid=document.getElementById('grid'); grid.innerHTML='';
+  SKINS.forEach(s=>{
+    let isOwned=owned.includes(s.id); let isSel=selected===s.id;
+    let div=document.createElement('div'); div.className='card'+(isSel?' sel':'');
+    div.innerHTML=`<div class="birdIcon">${s.emoji}</div><b>${s.name}</b><span>${s.desc}</span><button class="${isSel?'selectedBtn':isOwned?'owned':'buy'}">${isSel?'✓ USING THIS':isOwned?'SELECT':s.price===0?'FREE':'BUY • '+s.price+' 🪙'}</button>`;
+    div.querySelector('button').onclick=(e)=>{ e.stopPropagation();
+      if(!isOwned){ if(coins>=s.price){ coins-=s.price; owned.push(s.id); selected=s.id; saveAll(); updateHUD(); renderShop(); } else alert('Not enough coins!'); }
+      else{ selected=s.id; saveAll(); updateHUD(); renderShop(); }
+    };
+    grid.appendChild(div);
+  });
+  const gp=document.getElementById('gridPremium'); gp.innerHTML='';
+  PREMIUM.forEach(s=>{
+    let isOwned=owned.includes(s.id); let isSel=selected===s.id;
+    let div=document.createElement('div'); div.className='card premiumCard'+(isSel?' sel':'');
+    div.innerHTML=`<div class="birdIcon">${s.emoji}</div><b>${s.name} 👑</b><span>${s.desc}</span><button class="${isSel?'selectedBtn':isOwned?'owned':'premiumBtn'}">${isSel?'✓ USING THIS':isOwned?'SELECT':'👑 UNLOCK - 2 OPTION'}</button>`;
+    div.querySelector('button').onclick=(e)=>{ e.stopPropagation();
+      if(isOwned){ selected=s.id; saveAll(); updateHUD(); renderShop(); return; }
+      pendingPremium=s; document.getElementById('payName').textContent=s.name+' 👑 PREMIUM'; document.getElementById('redeemInput').value=''; document.getElementById('redeemError').style.display='none'; document.getElementById('payPopup').style.display='flex';
+    };
+    gp.appendChild(div);
+  });
+}
+function buyPremiumWithCoins(id){
+  let s = ALL_SKINS.find(x=>x.id===id);
+  if(coins >= 500){ coins-=500; if(!owned.includes(id)) owned.push(id); selected=id; saveAll(); updateHUD(); renderShop(); alert(s.name+' UNLOCKED with Coins!'); }
+  else alert('Coins kam hai! 500 Coins chahiye. Game khel ke kamao.');
+}
+function renderDevPacks(){
+  let used=getUsedCodes();
+  document.getElementById('devStats').textContent='Total Used: '+used.length+' / 3500 • Bache: '+(3500-used.length);
+  const list=document.getElementById('devPackList'); list.innerHTML='';
+  DEV_PACKS.forEach(p=>{
+    let usedCount=0; for(let i=1;i<=p.count;i++){ if(used.includes(makeCode(p.prefix,i))) usedCount++; }
+    let div=document.createElement('div'); div.className='devPack';
+    div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><b style="font-size:16px">${p.emoji} ${p.name}</b><br><span style="font-size:12px;color:#666">${p.prefix}-001 to ${p.prefix}-${String(p.count).padStart(3,'0')} • Total ${p.count}</span></div><div style="text-align:right"><b style="color:#2ecc71">${p.count-usedCount} Bache</b><br><span style="font-size:12px;color:#e74c3c">${usedCount} USED</span></div></div><div style="margin-top:8px;background:#eee;border-radius:8px;padding:6px;text-align:center;font-size:12px;font-weight:900">👆 TAP TO OPEN</div>`;
+    div.onclick=()=>{ currentDevPack=p; document.getElementById('devPackList').style.display='none'; document.getElementById('devCodeList').style.display='block'; document.getElementById('devPackTitle').textContent=p.emoji+' '+p.name+' - '+p.count+' Codes'; renderDevCodes(); };
+    list.appendChild(div);
+  });
+  document.getElementById('devPackList').style.display='block';
+  document.getElementById('devCodeList').style.display='none';
+}
+function renderDevCodes(){
+  if(!currentDevPack) return;
+  const cont=document.getElementById('devCodesContainer'); cont.innerHTML='';
+  for(let i=1;i<=currentDevPack.count;i++){
+    let code=makeCode(currentDevPack.prefix,i);
+    let used=isCodeUsed(code);
+    let row=document.createElement('div'); row.className='devCodeRow'+(used?' used':'');
+    row.innerHTML=`<div><b>${used?'USED - '+code:code}</b><br><span style="font-size:11px">${used?'Use ho chuka':'Available'}</span></div><button class="codeBtn ${used?'usedBtn':''}">${used?'USED':'COPY / USED'}</button>`;
+    let btn=row.querySelector('button');
+    btn.onclick=(e)=>{ e.stopPropagation(); if(used){ alert('Ye USED hai!'); return; } try{navigator.clipboard.writeText(code);}catch(err){} if(confirm(code+' COPY kar liya? USED kar dun?')){ markCodeUsed(code); renderDevPacks(); renderDevCodes(); } };
+    cont.appendChild(row);
+  }
+}
+function resetGame(){ bird.y=300; bird.vy=0; pipes=[]; coinsArr=[]; timerArr=[]; score=0; frame=0; shieldUsedCount=0; gameOver=false; dead=false; paused=false; invincibleUntil=0; document.getElementById('shieldTag').style.display='none'; updateHUD(); }
+function startGame(challenge){
+  if(!playerName){ document.getElementById('namePopup').style.display='flex'; return; }
+  isChallenge=!!challenge; challengeTimeLeft=15; resetGame();
+  document.getElementById('menu').style.display='none'; document.getElementById('shop').style.display='none'; document.getElementById('pauseMenu').style.display='none';
+  document.getElementById('tapHint').style.display='block'; document.getElementById('pauseBtn').style.display='block'; document.getElementById('powerTag').style.display='block'; document.getElementById('scoreBig').style.display='block'; document.getElementById('devFloat').style.display='none';
+  if(isChallenge){ document.getElementById('timerTag').style.display='block'; document.getElementById('timerTag').textContent='⏱️ CHALLENGE: 15s • Score: 0 • ⏱️ Ghadi +5s'; if(challengeTimer) clearInterval(challengeTimer); challengeTimer=setInterval(()=>{ if(paused||gameOver) return; challengeTimeLeft--; document.getElementById('timerTag').textContent='⏱️ CHALLENGE: '+challengeTimeLeft+'s • Score: '+score+' • ⏱️ +5s'; if(challengeTimeLeft<=0){ clearInterval(challengeTimer); finishGame('⏱️ TIME UP! Challenge Score: '+score); } },1000); }
+  else document.getElementById('timerTag').style.display='none';
+  gameStarted=true;
+}
+function finishGame(msg){
+  gameOver=true; if(score>best) best=score;
+  let prev=mapBest[currentMapId]||0; if(score>prev) mapBest[currentMapId]=score;
+  if(playerName && score>0) addToLeaderboard(playerName, score, curMap().name, isChallenge?'Challenge':'Normal');
+  saveAll(); updateHUD();
+  let next=getNextLockedMap(); let extra='';
+  if(next && isMapUnlocked(next)) extra='\n🎉 NAYA MAP KHUL GAYA: '+next.emoji+' '+next.name;
+  setTimeout(()=>{ showHome(msg+extra); },400);
+}
+function flap(){ if(!gameStarted || gameOver || paused || dead) return; bird.vy=curSkin().jump; document.getElementById('tapHint').style.display='none'; }
+function hit(hitPipe){
+  if(Date.now() < invincibleUntil) return; if(dead) return; dead=true;
+  let s=curSkin(); let totalShield=s.shield ? (s.shieldCount||1) : 0;
+  if(totalShield>0 && shieldUsedCount < totalShield){
+    shieldUsedCount++; dead=false; invincibleUntil=Date.now()+3000;
+    document.getElementById('shieldTag').textContent='🛡️ SHIELD NE BACHA LIYA! Bacha: '+(totalShield-shieldUsedCount);
+    document.getElementById('shieldTag').style.display='block';
+    if(hitPipe) pipes=pipes.filter(p=>p!==hitPipe);
+    bird.y=300; bird.vy=-9; updateHUD(); try{ navigator.vibrate(200); }catch(e){}
+    setTimeout(()=>{ document.getElementById('shieldTag').style.display='none'; },3000); return;
+  }
+  if(challengeTimer) clearInterval(challengeTimer);
+  finishGame('Game Over! Score: '+score+' • Map: '+curMap().name);
+}
+function drawBird(){
+  let s=curSkin(); ctx.save(); ctx.translate(bird.x,bird.y); ctx.rotate(Math.max(-0.4,Math.min(0.6,bird.vy*0.04)));
+  if(s.ghost) ctx.globalAlpha=0.55;
+  if(s.id>=100){ ctx.shadowColor='#FFD700'; ctx.shadowBlur=18; }
+  if(Date.now() < invincibleUntil){ ctx.globalAlpha=1; ctx.strokeStyle='#FFD700'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(0,0,bird.r+10,0,Math.PI*2); ctx.stroke(); if(s.ghost) ctx.globalAlpha=0.55; }
+  if(s.magnet){ ctx.globalAlpha=1; ctx.strokeStyle='rgba(255,105,180,.6)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,110,0,Math.PI*2); ctx.stroke(); if(s.ghost) ctx.globalAlpha=0.55; }
+  ctx.fillStyle=s.body; ctx.beginPath(); ctx.arc(0,0,bird.r,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=s.wing; ctx.beginPath(); ctx.ellipse(-4,4,12,8,0,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha=1; ctx.shadowBlur=0;
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(8,-6,7,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(10,-6,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#FF8C00'; ctx.beginPath(); ctx.moveTo(16,2); ctx.lineTo(26,5); ctx.lineTo(16,9); ctx.fill();
+  ctx.font='20px Arial'; ctx.textAlign='center'; ctx.fillText(s.emoji,-2,-18); ctx.restore();
 }
 function loop(){
- if(over) return;
- vel+=gravity; y+=vel; bird.style.top=y+"px";
- if(y<0) y=0; if(y>536){gameOver();}
- for(let p of pipes){
-  p.x-=3; p.top.style.left=p.x+"px"; p.bot.style.left=p.x+"px";
-  if(p.x+55<80 && !p.passed){p.passed=true;score++;scoreEl.innerText=score;}
-  if(p.x<114 && p.x+55>80){
-   let topH=parseInt(p.top.style.height);
-   if(y<topH || y+24>topH+150){gameOver();}
+  requestAnimationFrame(loop); if(paused) return;
+  let m=curMap(); ctx.fillStyle=m.bg; ctx.fillRect(0,0,W,H);
+  if(m.id==='space' || m.id==='night'){ ctx.fillStyle='#fff'; for(let i=0;i<30;i++){ let sx=(i*137+frame*0.2)%W; let sy=(i*71)%300; ctx.fillRect(sx,sy,2,2); } }
+  if(m.id==='snow'){ ctx.fillStyle='rgba(255,255,255,.9)'; for(let i=0;i<20;i++){ let sx=(i*97+frame*0.5)%W; let sy=(i*53+frame*0.8)%400; ctx.beginPath(); ctx.arc(sx,sy,3,0,Math.PI*2); ctx.fill(); } }
+  ctx.fillStyle='rgba(255,255,255,.6)'; for(let i=0;i<3;i++){ let cx=((frame*0.3+i*140)%500)-40; ctx.beginPath(); ctx.ellipse(cx,80+i*60,40,18,0,0,Math.PI*2); ctx.fill(); }
+  if(gameStarted && !gameOver){
+    frame++; let s=curSkin(); bird.vy+=(s.grav+m.grav); bird.y+=bird.vy;
+    let speed=Math.max(2.0, s.speed + (m.speed-3.2));
+    if(frame%90===0){ let gap=170; let topH=Math.random()*280+80; pipes.push({x:W,gapY:topH,gap:gap,passed:false}); if(Math.random()<0.6) coinsArr.push({x:W+40,y:topH+gap/2,r:12,taken:false}); }
+    if(isChallenge && frame%600===0){ timerArr.push({x:W+60,y:120+Math.random()*400,r:16,taken:false}); }
+    pipes.forEach(p=>p.x-=speed); pipes=pipes.filter(p=>p.x>-80);
+    coinsArr.forEach(cn=>{ cn.x-=speed; if(curSkin().magnet){ let dx=bird.x-cn.x, dy=bird.y-cn.y; if(Math.hypot(dx,dy)<170){ cn.x+=dx*0.22; cn.y+=dy*0.22; } } });
+    timerArr.forEach(t=>{ t.x-=speed; if(curSkin().magnet){ let dx=bird.x-t.x, dy=bird.y-t.y; if(Math.hypot(dx,dy)<170){ t.x+=dx*0.15; t.y+=dy*0.15; } } });
+    for(let p of pipes){ if(bird.x+bird.r>p.x && bird.x-bird.r<p.x+68){ if(bird.y-bird.r<p.gapY || bird.y+bird.r>p.gapY+p.gap){ hit(p); break; } } if(!p.passed && p.x+68<bird.x){ p.passed=true; score++; if(score>best) best=score; updateHUD(); } }
+    coinsArr.forEach(cn=>{ if(!cn.taken && Math.hypot(cn.x-bird.x,cn.y-bird.y)<bird.r+cn.r+6){ cn.taken=true; let add=curSkin().coin; coins+=add; saveAll(); updateHUD(); showCoinPop('+'+add+' COIN!'); } });
+    coinsArr=coinsArr.filter(c=>!c.taken && c.x>-20);
+    timerArr.forEach(t=>{ if(!t.taken && Math.hypot(t.x-bird.x,t.y-bird.y)<bird.r+t.r+8){ t.taken=true; challengeTimeLeft+=5; document.getElementById('timerTag').textContent='⏱️ CHALLENGE: '+challengeTimeLeft+'s • Score: '+score+' • +5s MILA!'; showCoinPop('⏱️ +5 SECOND!'); try{ navigator.vibrate(100); }catch(e){} } });
+    timerArr=timerArr.filter(t=>!t.taken && t.x>-30);
+    if(bird.y+bird.r>H-groundH || bird.y-bird.r<0) hit(null);
   }
- }
+  ctx.fillStyle=curMap().pipe; pipes.forEach(p=>{ ctx.fillRect(p.x,0,68,p.gapY); ctx.fillRect(p.x,p.gapY+p.gap,68,H-groundH-(p.gapY+p.gap)); ctx.fillStyle=curMap().pipeDark; ctx.fillRect(p.x-3,p.gapY-20,74,20); ctx.fillRect(p.x-3,p.gapY+p.gap,74,20); ctx.fillStyle=curMap().pipe; });
+  coinsArr.forEach(cn=>{ ctx.fillStyle='#FFD700'; ctx.beginPath(); ctx.arc(cn.x,cn.y,cn.r,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='bold 12px Arial'; ctx.textAlign='center'; ctx.fillText('🪙',cn.x,cn.y+4); });
+  timerArr.forEach(t=>{ ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(t.x,t.y,18,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#e74c3c'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(t.x,t.y,18,0,Math.PI*2); ctx.stroke(); ctx.fillStyle='#000'; ctx.font='bold 18px Arial'; ctx.textAlign='center'; ctx.fillText('⏱️',t.x,t.y+6); });
+  ctx.fillStyle=curMap().ground; ctx.fillRect(0,H-groundH,W,groundH); ctx.fillStyle=curMap().pipe; ctx.fillRect(0,H-groundH,W,18);
+  if(gameStarted) drawBird();
 }
-function gameOver(){ over=true; msg.innerText="Game Over! Score: "+score+" Tap to Restart"; }
+document.getElementById('playBtn').onclick=(e)=>{ e.stopPropagation(); startGame(false); };
+document.getElementById('challengeBtn').onclick=(e)=>{ e.stopPropagation(); startGame(true); };
+document.getElementById('shopBtn').onclick=(e)=>{ e.stopPropagation(); document.getElementById('menu').style.display='none'; document.getElementById('shop').style.display='flex'; renderShop(); updateHUD(); };
+document.getElementById('closeShop').onclick=(e)=>{ e.stopPropagation(); showHome(); };
+document.getElementById('leaderBtn').onclick=(e)=>{ e.stopPropagation(); document.getElementById('menu').style.display='none'; document.getElementById('leaderBoardScreen').style.display='flex'; renderLeaderboard(); };
+document.getElementById('closeLeader').onclick=(e)=>{ e.stopPropagation(); showHome(); };
+document.getElementById('redeemBoardBtn').onclick=(e)=>{ e.stopPropagation(); document.getElementById('menu').style.display='none'; document.getElementById('redeemBoardScreen').style.display='flex'; updateTournStatus(); };
+document.getElementById('closeRedeemBoard').onclick=(e)=>{ e.stopPropagation(); showHome(); };
+document.getElementById('contactBtn').onclick=(e)=>{ e.stopPropagation(); document.getElementById('contactPopup').style.display='flex'; };
+document.getElementById('closeContact').onclick=(e)=>{ e.stopPropagation(); document.getElementById('contactPopup').style.display='none'; };
+document.getElementById('tournJoinBtn').onclick=(e)=>{ e.stopPropagation(); let code=document.getElementById('tournCodeInput').value.trim().toUpperCase(); if(!code){ alert('Code daalo!'); return; } let pack=findPackByCode(code); if(!pack || !pack.isTourn){ alert('Galat Code! TOURN-001 se TOURN-1000 tak ka code daalo'); return; } if(isCodeUsed(code)){ alert('Ye code pehle use ho chuka hai!'); return; } markCodeUsed(code); localStorage.setItem('tournJoined',code); updateTournStatus(); alert('🎉 Tournament me JOIN ho gaye! Code: '+code); };
+document.getElementById('pauseBtn').onclick=(e)=>{ e.stopPropagation(); paused=true; document.getElementById('pauseMenu').style.display='flex'; };
+document.getElementById('resumeBtn2').onclick=(e)=>{ e.stopPropagation(); paused=false; document.getElementById('pauseMenu').style.display='none'; };
+document.getElementById('homeBtn').onclick=(e)=>{ e.stopPropagation(); showHome(); };
+document.getElementById('resumeBtn').onclick=(e)=>{ e.stopPropagation(); startGame(false); };
+document.getElementById('soundBtn').onclick=(e)=>{ e.stopPropagation(); soundOn=!soundOn; saveAll(); updateHUD(); };
+document.getElementById('dailyBtn').onclick=(e)=>{ e.stopPropagation(); let today=new Date().toDateString(); if(lastDaily===today) return; lastDaily=today; try{localStorage.setItem('flappyDaily',today);}catch(err){} coins+=10; saveAll(); updateHUD(); alert('🎁 +10 Coins!'); };
+document.getElementById('saveNameBtn').onclick=(e)=>{ e.stopPropagation(); let v=document.getElementById('playerNameInput').value.trim().toUpperCase(); if(v.length<3){ alert('Naam kam se kam 3 letters ka rakho!'); return; } playerName=v; try{localStorage.setItem('flappyPlayerName',v);}catch(err){} document.getElementById('namePopup').style.display='none'; startGame(false); };
+document.getElementById('payCancelBtn').onclick=(e)=>{ e.stopPropagation(); pendingPremium=null; document.getElementById('payPopup').style.display='none'; };
+document.getElementById('buyCoinsBtn').onclick=(e)=>{ e.stopPropagation(); if(pendingPremium) buyPremiumWithCoins(pendingPremium.id); document.getElementById('payPopup').style.display='none'; };
+document.getElementById('redeemVerifyBtn').onclick=(e)=>{ e.stopPropagation(); let code=document.getElementById('redeemInput').value.trim().toUpperCase(); let err=document.getElementById('redeemError'); if(!code){ err.textContent='Code daalo!'; err.style.display='block'; return; } let pack=findPackByCode(code); if(!pack || pack.isTourn){ err.textContent='Ye Tournament code hai! Skin ke liye alag code chahiye.'; err.style.display='block'; return; } if(isCodeUsed(code)){ err.textContent='Ye code USED ho chuka hai!'; err.style.display='block'; return; } if(pendingPremium && pack.skinId!==pendingPremium.id){ err.textContent='Ye code '+pack.name+' ka hai!'; err.style.display='block'; return; } err.style.display='none'; markCodeUsed(code); let skinToUnlock=ALL_SKINS.find(s=>s.id===pack.skinId); if(!owned.includes(skinToUnlock.id)) owned.push(skinToUnlock.id); selected=skinToUnlock.id; saveAll(); updateHUD(); renderShop(); document.getElementById('payPopup').style.display='none'; alert(skinToUnlock.name+' UNLOCKED!'); pendingPremium=null; };
+document.getElementById('devFloat').onclick=(e)=>{ e.stopPropagation(); document.getElementById('devCodeInput').value=''; document.getElementById('devCodeError').style.display='none'; document.getElementById('devLockPopup').style.display='flex'; };
+document.getElementById('devLockCancel').onclick=(e)=>{ e.stopPropagation(); document.getElementById('devLockPopup').style.display='none'; };
+document.getElementById('devUnlockBtn').onclick=(e)=>{ e.stopPropagation(); let v=document.getElementById('devCodeInput').value.trim(); if(v===DEV_CODE){ document.getElementById('devLockPopup').style.display='none'; document.getElementById('menu').style.display='none'; document.getElementById('devShop').style.display='flex'; renderDevPacks(); } else { document.getElementById('devCodeError').style.display='block'; } };
+document.getElementById('devShopBack').onclick=(e)=>{ e.stopPropagation(); showHome(); };
+document.getElementById('devBackToPacks').onclick=(e)=>{ e.stopPropagation(); renderDevPacks(); };
+document.getElementById('box').addEventListener('touchstart', function(e){
+  if(e.target.closest('button') || e.target.closest('#shop') || e.target.closest('#menu') || e.target.closest('#pauseMenu') || e.target.closest('#payPopup') || e.target.closest('#devLockPopup') || e.target.closest('#devShop') || e.target.closest('#namePopup') || e.target.closest('#leaderBoardScreen') || e.target.closest('#redeemBoardScreen') || e.target.closest('#contactPopup') || e.target.closest('input') || e.target.closest('#mapScroll') || e.target.closest('#mapRow') || e.target.closest('a')) return;
+  e.preventDefault(); flap();
+},{passive:false});
+document.getElementById('box').addEventListener('mousedown', function(e){
+  if(e.target.closest('button') || e.target.closest('#shop') || e.target.closest('#menu') || e.target.closest('#pauseMenu') || e.target.closest('#payPopup') || e.target.closest('#devLockPopup') || e.target.closest('#devShop') || e.target.closest('#namePopup') || e.target.closest('#leaderBoardScreen') || e.target.closest('#redeemBoardScreen') || e.target.closest('#contactPopup') || e.target.closest('input') || e.target.closest('#mapScroll') || e.target.closest('#mapRow') || e.target.closest('a')) return;
+  flap();
+});
+showHome(); renderShop(); loop();
 </script>
 </body>
-</html>
+                                                                                                                                                                                                                                                                                                                   </html>
